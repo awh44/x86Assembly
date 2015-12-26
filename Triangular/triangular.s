@@ -34,7 +34,7 @@ _atoi:
 		####################
 		imul $10, %rax
 		####################
-	
+
 		#Extract the current character from the string and "convert" it from ascii to integer
 		#by subtracting the ascii value of '0'
 		####################
@@ -52,22 +52,44 @@ _atoi:
 		inc %rcx
 		jmp atoi_loop_start
 		####################
-		
+
 	atoi_loop_exit:
 		ret
 
-_int_print:
-	subq $4, %rsp #Make room on the stack
-	movb $10, 1(%rsp) #Place the character '\n' on the stack
-	movb $48, (%rsp) #Place the character '0' at the top/bottom of the stack
+/**
+	_reverse_int_print: Prints the (unsigned) integer contained in %rdi in reverse order
+		void int_print(int n);
+	@param %rdi - the integer to print
+*/
+_reverse_int_print:
+	subq $4, %rsp #Make room on the stack for a single character
+	movq %rsp, %rsi #Pre set up the pointer to the character for the write syscall
+	movq $10, %r12 #Set up a constant for use with division
+	movq %rdi, %r13 #Move the argument to a temporary register
 
+	_print_loop_start:
+		movq %r13, %rax #Move the integer into the lower part of the division register
+		cqo #Sign extend %rax into %rdx
+		div %r12 #Perform the division by ten
+		movq %rax, %r13 #Move the quotient back to the temporary register for use next iteration
+		addq $48, %rdx #'Convert' the remainder to a character
+		movb %dl, (%rsp) #Move the character to the stack
+
+		movq $1, %rax #1 is the syscall number for write
+		movq $1, %rdi #1 is the file descriptor for stdout
+		movq $1, %rdx #Printing only a single character
+		syscall
+
+		cmpq $0, %r13
+		jne _print_loop_start
+
+	movb $10, (%rsi)
 	movq $1, %rax
 	movq $1, %rdi
 	movq %rsp, %rsi
-	movq $2, %rdx
+	movq $1, %rdx
 	syscall
 
-	
 	addq $4, %rsp #Restore the stack
 	ret
 
@@ -101,10 +123,10 @@ _triangular:
 		inc %rcx
 		jmp tri_loop_start
 		###################
-		
+
 	tri_loop_exit:
 		ret
-	
+
 _start:
 	#Output the prompt
 	####################
@@ -145,7 +167,7 @@ _start:
 	#Set up the argument and call int_print
 	####################
 	movq %rax, %rdi
-	call _int_print
+	call _reverse_int_print
 	####################
 
 	call _exit
